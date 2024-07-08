@@ -1,0 +1,33 @@
+{
+  "semi": false,
+  "printWidth": 100,
+  "trailingComma": "all",
+  "singleQuote": true,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "bracketSameLine": false,
+  "importOrder": [
+    "<BUILTIN_MODULES>",
+    "",
+    "^react$",
+    "^react-(.*)$",
+    "",
+    "<THIRD_PARTY_MODULES>",
+    "",
+    "^#(.*)$",
+    "",
+    "^[../](.*)$",
+    "",
+    "^./(.*)$"
+  ],
+  "importOrderParserPlugins": ["typescript", "jsx"],
+  "importOrderTypeScriptVersion": "5.4.0",
+  "overrides": [
+    {
+      "files": "*.ts",
+      "options": {
+        "parser": "typescript"
+      }
+    }
+  ]
+}
