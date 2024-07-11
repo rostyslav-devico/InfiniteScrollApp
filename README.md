@@ -8,5 +8,6 @@
 1. Clone the repository
 2. Run `npm install`
 
-## Usage 
+## Usage
+
 1. Run `npm start`

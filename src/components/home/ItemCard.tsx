@@ -1,32 +1,31 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useContext } from 'react'
 import styled from 'styled-components'
 import { Item } from '../../types/item-type'
-import Logo from '../../assets/logo'
+import Image from '../common/Image'
+import { DataContext } from '../../services/DataContext'
+import { useNavigate } from 'react-router-dom'
+import { UI_URL } from '../../constants'
 
 interface StyledItemCardProps {
   item: Item
 }
 
 const ItemCard: React.FC<StyledItemCardProps> = ({ item }) => {
-  const [loading, setLoaded] = useState(true)
-  const handleImageLoad = useCallback(() => {
-    setLoaded(false)
-  }, [setLoaded])
+  const { setSelectedItem } = useContext(DataContext)
+  const navigate = useNavigate()
+
+  const handleItemClick = useCallback(() => {
+    setSelectedItem(item)
+    navigate(UI_URL.item.replace(':id', item.id))
+  }, [item, navigate, setSelectedItem])
 
   return (
-    <CardContainer href={`/item/${item.id}`} key={item.id}>
-      <Card>
-        {loading && (
-          <div className="ml-[16px] flex items-center justify-center h-[150px]">
-            <Logo />
-          </div>
-        )}
-        <Thumbnail
-          className={loading ? 'hidden' : ''}
-          src={item.thumbnailUrl}
-          onLoad={handleImageLoad}
-        />
-        <Title className="line-clamp-4">{item.title}</Title>
+    <CardContainer key={item.id}>
+      <Card onClick={handleItemClick}>
+        <Image src={item.thumbnailUrl} alt={item.title} className="flex-none w-[150px] h-[150px]" />
+        <p className="w-full text-left text-xl lg:text-2xl text-gray-200 font-medium my-[16px] lg:my-[8px] mr-[16px] capitalize line-clamp-4 overflow-hidden">
+          {item.title}
+        </p>
       </Card>
     </CardContainer>
   )
@@ -47,27 +46,12 @@ const CardContainer = styled.a`
 
 const Card = styled.div`
   display: flex;
+  cursor: pointer;
   flex-direction: row;
   gap: 16px;
   background-color: #282c34;
   border: 2px solid #636363;
   border-radius: 8px;
-  padding: 16px;
-`
-
-const Thumbnail = styled.img`
-  width: 150px;
-  height: 150px;
-  border-radius: 4px;
-`
-
-const Title = styled.p`
-  text-align: left;
-  font-size: 24px;
-  color: #e6e6e6;
-  font-weight: 500;
-  margin-top: 8px;
-  text-transform: capitalize;
 `
 
 export default ItemCard

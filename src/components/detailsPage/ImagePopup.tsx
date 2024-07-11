@@ -2,20 +2,12 @@ import React, { useCallback } from 'react'
 import styled from 'styled-components'
 
 interface ImagePopupProps {
-  imageUrl: string
+  child: React.ReactNode
   onClose: () => void
 }
 
-const ImagePopup: React.FC<ImagePopupProps> = ({ imageUrl, onClose }) => {
-  const stopPropagation = useCallback((e: React.MouseEvent<HTMLImageElement>) => {
-    e.stopPropagation()
-  }, [])
-
-  return (
-    <PopupContainer onClick={onClose}>
-      <PopupImage src={imageUrl} alt="Full Size" onClick={stopPropagation} />
-    </PopupContainer>
-  )
+const ImagePopup: React.FC<ImagePopupProps> = ({ child, onClose }) => {
+  return <PopupContainer onClick={onClose}>{child}</PopupContainer>
 }
 
 const PopupContainer = styled.div`
@@ -28,15 +20,6 @@ const PopupContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 10;
 `
-
-const PopupImage = styled.img`
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-`
-
 export default ImagePopup

@@ -7,6 +7,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "notistack": "^3.0.1",
+    "qs": "^6.12.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.24.1",
@@ -16,6 +17,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "format": "prettier --write .",
     "build": "tsc && react-scripts start",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -39,6 +41,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@svgr/webpack": "^8.1.0",
     "@types/lodash.debounce": "^4.0.9",
     "autoprefixer": "^10.4.19",
@@ -46,5 +49,10 @@
     "prettier": "^3.3.2",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.3"
+  },
+  "overrides": {
+    "react-scripts": {
+      "typescript": "^5"
+    }
   }
 }

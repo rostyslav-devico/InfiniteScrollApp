@@ -1,20 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Item } from '../../types/item-type'
 import RelatedList from '../../components/detailsPage/RelatedItemsList'
-import { enqueueSnackbar } from 'notistack'
 import styled from 'styled-components'
-import Header from '../../components/Header'
+import Header from '../../components/common/Header'
+import { fetchFromApi } from '../../services/photosApi'
+import { DataContext } from '../../services/DataContext'
+import Image from '../../components/common/Image'
+import { API_ENDPOINTS, UI_URL } from '../../constants'
 
 const ItemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [item, setItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [relatedByAlbum, setRelatedByAlbum] = useState<Item[]>([])
   const [relatedByName, setRelatedByName] = useState<Item[]>([])
   const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const { selectedItem } = useContext(DataContext)
+  const navigate = useNavigate()
 
+  const controller = useMemo(() => new AbortController(), [])
   const openPopup = useCallback(() => {
     setIsPopupOpen(true)
   }, [])
@@ -24,65 +29,68 @@ const ItemDetail: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
-
-    const fetchItem = async () => {
-      try {
-        const response = await fetch(`https://jsonplaceholder.typicode.com/photos/${id}`, {
-          signal: controller.signal,
-        })
-        if (!response.ok) {
-          throw new Error('Network response was not ok')
-        }
-        const result = await response.json()
-        setItem(result)
-        fetchRelatedItems(result, controller.signal)
-        setLoading(false)
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          setError(err.message)
-          enqueueSnackbar(err.message, { variant: 'error' })
-          setLoading(false)
-        }
-      }
+    if (isPopupOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'auto'
     }
-
-    const fetchRelatedItems = async (item: Item, signal: AbortSignal) => {
-      try {
-        const albumResponse = await fetch(
-          `https://jsonplaceholder.typicode.com/photos?albumId=${item.albumId}&_limit=10`,
-          { signal },
-        )
-        const nameResponse = await fetch(
-          `https://jsonplaceholder.typicode.com/photos?title_like=${item.title.split(' ')[0]}&_limit=10`,
-          { signal },
-        )
-        if (!albumResponse.ok || !nameResponse.ok) {
-          throw new Error('Network response was not ok')
-        }
-        const albumResult = await albumResponse.json()
-        const nameResult = await nameResponse.json()
-        setRelatedByAlbum(albumResult.filter((i: Item) => i.id !== item.id))
-        setRelatedByName(nameResult.filter((i: Item) => i.id !== item.id))
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          enqueueSnackbar(err.message, { variant: 'error' })
-          setError(err.message)
-        }
-      }
-    }
-
-    fetchItem()
 
     return () => {
-      controller.abort()
+      document.body.style.overflow = 'auto'
     }
-  }, [id])
+  }, [isPopupOpen])
+
+  useEffect(() => {
+    const signal = controller.signal
+    setLoading(true)
+
+    const fetchItem = async () => {
+      if (selectedItem) {
+        setItem(selectedItem)
+      } else {
+        const data = (await fetchFromApi<Item>(signal, API_ENDPOINTS.photo(id!))).data
+        if (!data) {
+          controller.abort()
+          navigate(UI_URL.root)
+          return
+        }
+        setItem(data)
+      }
+    }
+    setLoading(false)
+
+    fetchItem()
+  }, [id, navigate, selectedItem, controller])
+
+  useEffect(() => {
+    if (!item) return
+    const signal = controller.signal
+
+    const fetchRelatedItems = async (item: Item) => {
+      const [albumResult, nameResult] = await Promise.all([
+        (
+          await fetchFromApi<Item[]>(signal, API_ENDPOINTS.photos, {
+            _limit: 10,
+            albumId: item.albumId,
+          })
+        ).data || [],
+
+        (
+          await fetchFromApi<Item[]>(signal, API_ENDPOINTS.photos, {
+            _limit: 10,
+            title_like: item.title?.split(' ')[0],
+          })
+        ).data || [],
+      ])
+
+      setRelatedByAlbum(albumResult.filter((i: Item) => i.id !== item.id))
+      setRelatedByName(nameResult.filter((i: Item) => i.id !== item.id))
+    }
+
+    fetchRelatedItems(item)
+  }, [item, controller, navigate])
 
   if (loading) return <p className="text-gray-300">Loading...</p>
-  if (error) return <p className="text-red-500">{error}</p>
 
   return (
     <>
@@ -92,9 +100,14 @@ const ItemDetail: React.FC = () => {
           <>
             <ItemContainer>
               <ItemDetails>
-                <ItemImage src={item.url} alt={item.title} onClick={openPopup} />
-                <div className="flex flex-col items-start">
-                  <h1 className="text-4xl font-bold mb-4">{item.title}</h1>
+                <Image
+                  className="w-1/3 h-auto flex cursor-pointer"
+                  src={item.url}
+                  alt={item.title}
+                  onClick={openPopup}
+                />
+                <div className="flex w-2/3 flex-col items-start pl-4">
+                  <h1 className="text-xl md:text-4xl font-bold mb-4">{item.title}</h1>
                   <p className="text-lg text-gray-400">{`Album ID: ${item.albumId}`}</p>
                   <p className="text-lg text-gray-400">{`Photo ID: ${item.id}`}</p>
                 </div>
@@ -106,7 +119,7 @@ const ItemDetail: React.FC = () => {
             </RelatedItemsContainer>
             {isPopupOpen && (
               <ImagePopup onClick={closePopup}>
-                <img
+                <Image
                   src={item.url}
                   alt={item.title}
                   className="max-w-[90%] max-h-[90%] object-contain rounded-lg shadow-xl"
@@ -154,20 +167,6 @@ const ItemDetails = styled.div`
   }
 `
 
-const ItemImage = styled.img`
-  width: 100%;
-  max-width: 400px;
-  border-radius: 4px;
-  margin-bottom: 16px;
-  cursor: pointer;
-
-  @media (min-width: 768px) {
-    width: 25%;
-    margin-bottom: 0;
-    margin-right: 24px;
-  }
-`
-
 const RelatedItemsContainer = styled.div`
   width: 100%;
   display: flex;
@@ -189,5 +188,5 @@ const ImagePopup = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 10;
 `

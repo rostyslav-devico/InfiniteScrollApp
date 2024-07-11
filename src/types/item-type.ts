@@ -1,6 +1,6 @@
 export interface Item {
   albumId: number
-  id: number
+  id: string
   title: string
   url: string
   thumbnailUrl: string
